@@ -9,6 +9,7 @@ package no.hvl.dat110.util;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.rmi.RemoteException;
 import java.security.NoSuchAlgorithmException;
@@ -52,7 +53,7 @@ public class FileManager {
 		this.chordnode = chordnode;
 	}
 	
-	public void createReplicaFiles() {
+	public void createReplicaFiles() throws UnsupportedEncodingException {
 	 	
 		// implement
 		
@@ -77,7 +78,7 @@ public class FileManager {
      * @param bytesOfFile
      * @throws RemoteException 
      */
-    public int distributeReplicastoPeers() throws RemoteException {
+    public int distributeReplicastoPeers() throws RemoteException, UnsupportedEncodingException {
     	int counter = 0;
     	
     	// Task1: Given a filename, make replicas and distribute them to all active peers such that: pred < replica <= peer
@@ -96,8 +97,15 @@ public class FileManager {
     	
     	// increment counter
     	
-    	
-    	
+    	createReplicaFiles();
+
+    	for (int i = 0; i < replicafiles.length; i++) {
+			NodeInterface successor = chordnode.findSuccessor(replicafiles[i]);
+			successor.addKey(replicafiles[i]);
+			successor.saveFileContent(filename, replicafiles[i], bytesOfFile, true);
+			counter++;
+		}
+
 		return counter;
     }
  
