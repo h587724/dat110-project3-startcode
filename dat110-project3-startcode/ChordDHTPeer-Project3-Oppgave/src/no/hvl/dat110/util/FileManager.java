@@ -18,8 +18,10 @@ import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import no.hvl.dat110.middleware.Message;
+import no.hvl.dat110.middleware.Node;
 import no.hvl.dat110.rpc.interfaces.NodeInterface;
 import no.hvl.dat110.util.Hash;
 
@@ -98,11 +100,16 @@ public class FileManager {
     	// increment counter
     	
     	createReplicaFiles();
-
+		Random random = new Random();	//modification for task 5
+		int rand = random.nextInt(replicafiles.length);
     	for (int i = 0; i < replicafiles.length; i++) {
 			NodeInterface successor = chordnode.findSuccessor(replicafiles[i]);
 			successor.addKey(replicafiles[i]);
-			successor.saveFileContent(filename, replicafiles[i], bytesOfFile, true);
+			if (i == rand){		//modification for task 5, randomly assigning a random peer to the file
+				successor.saveFileContent(filename, replicafiles[i], bytesOfFile, true);
+			} else {
+				successor.saveFileContent(filename, replicafiles[i], bytesOfFile, false);
+			}
 			counter++;
 		}
 
@@ -131,9 +138,20 @@ public class FileManager {
 		// get the metadata (Message) of the replica from the successor, s (i.e. active peer) of the file
 		
 		// save the metadata in the set succinfo.
-		
+
+		this.filename = filename;
 		this.activeNodesforFile = succinfo;
-		
+
+		try {
+			createReplicaFiles();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		for (int i = 0; i < replicafiles.length; i++){
+			NodeInterface successor = chordnode.findSuccessor(replicafiles[i]);
+			succinfo.add(successor.getFilesMetadata(replicafiles[i]));
+		}
+
 		return succinfo;
 	}
 	
@@ -141,7 +159,7 @@ public class FileManager {
 	 * Find the primary server - Remote-Write Protocol
 	 * @return 
 	 */
-	public NodeInterface findPrimaryOfItem() {
+	public NodeInterface findPrimaryOfItem() throws RemoteException, UnsupportedEncodingException {
 
 		// Task: Given all the active peers of a file (activeNodesforFile()), find which is holding the primary copy
 		
@@ -152,8 +170,12 @@ public class FileManager {
 		// use the primaryServer boolean variable contained in the Message class to check if it is the primary or not
 		
 		// return the primary
-		
-		return null; 
+
+		Set<Message> primary = activeNodesforFile.stream().filter(a -> a.isPrimaryServer()).collect(Collectors.toSet());
+		assert primary.size() > 0 : "No primary elements found for the given file!";
+		Message prim = primary.iterator().next();
+		NodeInterface primNode = new Node(prim.getNodeIP(), prim.getPort());
+		return primNode;
 	}
 	
     /**

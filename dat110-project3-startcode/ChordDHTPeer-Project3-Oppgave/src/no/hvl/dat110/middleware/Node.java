@@ -1,5 +1,6 @@
 package no.hvl.dat110.middleware;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -42,7 +43,7 @@ public class Node extends UnicastRemoteObject implements NodeInterface {
 	
 	private static final long serialVersionUID = 1L;
 	
-	public Node(String nodename, int port) throws RemoteException {
+	public Node(String nodename, int port) throws RemoteException, UnsupportedEncodingException {
 		super();
 		this.port = port;
 		this.nodename = nodename;									// use a different name as "IP" for single machine simulation
@@ -182,7 +183,7 @@ public class Node extends UnicastRemoteObject implements NodeInterface {
 
 	@Override
 	public boolean requestMutexWriteOperation(Message message, byte[] updates, Set<Message> activepeers)
-			throws RemoteException {
+			throws RemoteException, InterruptedException {
 
 		this.message = message;
 		this.activenodesforfile = activepeers;
