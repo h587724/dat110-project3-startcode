@@ -149,7 +149,7 @@ public class FileContentUpdate extends JFrame {
 
 			JOptionPane.showMessageDialog(null,"Access granted? "+reply, "Message",JOptionPane.INFORMATION_MESSAGE);
 			
-		} catch (RemoteException e) {
+		} catch (RemoteException | InterruptedException e) {
 			e.printStackTrace();
 		}
 	}

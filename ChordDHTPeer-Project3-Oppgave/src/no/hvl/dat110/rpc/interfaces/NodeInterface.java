@@ -57,7 +57,7 @@ public interface NodeInterface extends Remote {
 	
 	/** Concerns mutual exclusion algorithm*/
 	
-	public boolean requestMutexWriteOperation(Message message, byte[] updates, Set<Message> messages) throws RemoteException;
+	public boolean requestMutexWriteOperation(Message message, byte[] updates, Set<Message> messages) throws RemoteException, InterruptedException;
 	
 	public void acquireLock() throws RemoteException;
 	

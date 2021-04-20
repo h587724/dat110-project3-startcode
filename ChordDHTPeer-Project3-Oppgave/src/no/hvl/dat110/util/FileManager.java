@@ -9,6 +9,7 @@ package no.hvl.dat110.util;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.rmi.RemoteException;
 import java.security.NoSuchAlgorithmException;
@@ -17,8 +18,10 @@ import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import no.hvl.dat110.middleware.Message;
+import no.hvl.dat110.middleware.Node;
 import no.hvl.dat110.rpc.interfaces.NodeInterface;
 import no.hvl.dat110.util.Hash;
 
@@ -52,7 +55,7 @@ public class FileManager {
 		this.chordnode = chordnode;
 	}
 	
-	public void createReplicaFiles() {
+	public void createReplicaFiles() throws UnsupportedEncodingException {
 	 	
 		// implement
 		
@@ -64,6 +67,12 @@ public class FileManager {
 		
 		// store the hash in the replicafiles array.
 
+		for (int i = 0; i <= Util.numReplicas; i++) {
+			filename += i;
+			BigInteger hash = Hash.hashOf(filename);
+			replicafiles [i] = hash;
+		}
+		
 	}
 	
     /**
@@ -71,7 +80,7 @@ public class FileManager {
      * @param bytesOfFile
      * @throws RemoteException 
      */
-    public int distributeReplicastoPeers() throws RemoteException {
+    public int distributeReplicastoPeers() throws RemoteException, UnsupportedEncodingException {
     	int counter = 0;
     	
     	// Task1: Given a filename, make replicas and distribute them to all active peers such that: pred < replica <= peer
@@ -90,9 +99,23 @@ public class FileManager {
     	
     	// increment counter
     	
-    		
+    	createReplicaFiles();
+		Random random = new Random();	//modification for task 5
+		int rand = random.nextInt(replicafiles.length);
+    	for (int i = 0; i < replicafiles.length; i++) {
+			NodeInterface successor = chordnode.findSuccessor(replicafiles[i]);
+			successor.addKey(replicafiles[i]);
+			if (i == rand){		//modification for task 5, randomly assigning a random peer to the file
+				successor.saveFileContent(filename, replicafiles[i], bytesOfFile, true);
+			} else {
+				successor.saveFileContent(filename, replicafiles[i], bytesOfFile, false);
+			}
+			counter++;
+		}
+
 		return counter;
     }
+ 
 	
 	/**
 	 * 
@@ -115,9 +138,20 @@ public class FileManager {
 		// get the metadata (Message) of the replica from the successor, s (i.e. active peer) of the file
 		
 		// save the metadata in the set succinfo.
-		
+
+		this.filename = filename;
 		this.activeNodesforFile = succinfo;
-		
+
+		try {
+			createReplicaFiles();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		for (int i = 0; i < replicafiles.length; i++){
+			NodeInterface successor = chordnode.findSuccessor(replicafiles[i]);
+			succinfo.add(successor.getFilesMetadata(replicafiles[i]));
+		}
+
 		return succinfo;
 	}
 	
@@ -125,7 +159,7 @@ public class FileManager {
 	 * Find the primary server - Remote-Write Protocol
 	 * @return 
 	 */
-	public NodeInterface findPrimaryOfItem() {
+	public NodeInterface findPrimaryOfItem() throws RemoteException, UnsupportedEncodingException {
 
 		// Task: Given all the active peers of a file (activeNodesforFile()), find which is holding the primary copy
 		
@@ -136,8 +170,18 @@ public class FileManager {
 		// use the primaryServer boolean variable contained in the Message class to check if it is the primary or not
 		
 		// return the primary
-		
-		return null; 
+
+		Set<Message> primary = activeNodesforFile.stream().filter(a -> a.isPrimaryServer()).collect(Collectors.toSet());
+		assert primary.size() > 0 : "No primary elements found for the given file!";
+		while (primary.iterator().hasNext()){
+			Message prim = primary.iterator().next();
+			if (prim.getNameOfFile() == filename){
+				return Util.getProcessStub(prim.getNodeIP(), prim.getPort());
+			} else {
+				System.out.println("No primary nodes found for file " + filename + " ! FileManager.findPrimaryOfItem()");
+			}
+		}
+		return null;
 	}
 	
     /**

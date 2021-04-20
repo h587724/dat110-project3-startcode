@@ -7,6 +7,7 @@ package no.hvl.dat110.util;
  */
 
 import java.io.UnsupportedEncodingException;
+
 import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.security.MessageDigest;
@@ -16,7 +17,7 @@ public class Hash {
 	
 	private static BigInteger hashint; 
 	
-	public static BigInteger hashOf(String entity) {		
+	public static BigInteger hashOf(String entity) throws UnsupportedEncodingException {
 		
 		// Task: Hash a given string using MD5 and return the result as a BigInteger.
 		
@@ -29,6 +30,16 @@ public class Hash {
 		// convert the hex into BigInteger
 		
 		// return the BigInteger
+		
+		MessageDigest md = null;
+		try {
+			md = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			System.out.println("No such algorithm found! " + e);
+		}
+		byte[] bytes = entity.getBytes("UTF-8");
+		byte[] digest = md.digest(bytes);
+		hashint = new BigInteger (toHex(digest), 16);
 		
 		return hashint;
 	}
@@ -45,7 +56,15 @@ public class Hash {
 		
 		// return the address size
 		
-		return null;
+		MessageDigest md = null;
+		try {
+			md = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			System.out.println("No such algorithm found! " + e);
+		}
+		int dLength = md.getDigestLength() * 8;
+		BigInteger addressSize = BigInteger.valueOf((long)Math.pow(2, dLength));
+		return addressSize;
 	}
 	
 	public static int bitSize() {
@@ -53,6 +72,14 @@ public class Hash {
 		int digestlen = 0;
 		
 		// find the digest length
+		
+		MessageDigest md = null;
+		try {
+			md = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			System.out.println("No such algorithm found! " + e);
+		}
+		digestlen = md.getDigestLength();
 		
 		return digestlen*8;
 	}
